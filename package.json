@@ -9,6 +9,7 @@
     "format:check": "prettier --check .",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "wrangler d1 migrations apply in-ctrl",
+    "db:migrate:remote": "wrangler d1 migrations apply in-ctrl --remote",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
