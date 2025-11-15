@@ -1,31 +1,47 @@
-import { Hono } from 'hono';
+import { OpenAPIHono } from '@hono/zod-openapi';
+import { swaggerUI } from '@hono/swagger-ui';
 import { clerkMiddleware, getAuth } from '@hono/clerk-auth';
-import { getDb } from './db';
-import { users } from './db/schema';
-import { eq } from 'drizzle-orm';
+import mediaRoutes from './routes/media';
+import { openAPIConfig } from './config/openapi';
 
-const app = new Hono<{ Bindings: { DB_BINDING: D1Database } }>();
+const app = new OpenAPIHono<{
+  Bindings: CloudflareBindings;
+  Variables: {
+    userId: string;
+  };
+}>();
 
+// OpenAPI documentation endpoints (no auth required)
+app.doc('/openapi.json', openAPIConfig);
+app.get('/docs', swaggerUI({ url: '/openapi.json' }));
+
+// Apply Clerk middleware
 app.use('*', clerkMiddleware());
 
-app.get('/', async (c) => {
+// Require authentication for all routes - rejects unauthenticated requests
+app.use('*', async (c, next) => {
   const auth = getAuth(c);
 
   if (!auth?.userId) {
-    return c.json({
-      message: 'You are not logged in.',
-    });
+    return c.json({ message: 'Unauthorized' }, 401);
   }
 
-  const db = getDb(c.env.DB_BINDING);
+  // Set userId in context for use in routes
+  c.set('userId', auth.userId);
+  await next();
+});
 
-  const user = await db.select().from(users).where(eq(users.clerkId, auth.userId)).get();
+// Health check / root endpoint
+app.get('/', async (c) => {
+  const userId = c.get('userId')!;
 
   return c.json({
     message: 'You are logged in!',
-    userId: auth.userId,
-    user: user,
+    userId: userId,
   });
 });
+
+// Mount media routes
+app.route('/media', mediaRoutes);
 
 export default app;
