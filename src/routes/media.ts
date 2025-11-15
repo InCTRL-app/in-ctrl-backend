@@ -38,7 +38,7 @@ media.openapi(uploadPresignedRoute, async (c) => {
     const { url, expires } = await generatePresignedUploadUrl(
       c.env,
       key,
-      contentType || 'application/octet-stream',
+      contentType,
     );
 
     return c.json({

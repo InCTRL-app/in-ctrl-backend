@@ -1,11 +1,37 @@
 import { z } from 'zod';
 
 /**
+ * Allowed MIME types for media uploads
+ */
+export const allowedMediaTypes = [
+  // Images
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/svg+xml',
+  // Videos
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+  'video/x-msvideo', // .avi
+  // Audio
+  'audio/mpeg',
+  'audio/mp3',
+  'audio/wav',
+  'audio/webm',
+  'audio/ogg',
+] as const;
+
+/**
  * Schema for generating presigned upload URL request body
  */
 export const generateUploadUrlSchema = z.object({
   filename: z.string().min(1, 'filename is required'),
-  contentType: z.string().optional(),
+  contentType: z.enum(allowedMediaTypes, {
+    message: `contentType must be one of: ${allowedMediaTypes.join(', ')}`,
+  }),
 });
 
 /**
